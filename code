@@ -1,0 +1,69 @@
+#import related modules
+import requests
+import re
+from collections import defaultdict
+from bs4 import BeautifulSoup
+import selenium
+from selenium import webdriver
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+#fetch the website that needed to be crawled
+browser = webdriver.Firefox()
+browser.get("https://boutiquecigarette.fr/auvergne-rhone-alpes/")
+
+#get store address
+soup = BeautifulSoup(browser.page_source,'lxml')
+linkList = soup.find_all("div", {"class":re.compile("nfolvl*")})
+
+#function to get store name
+def getStoreName(soup):
+    storeName = soup.find_all("h3", attrs={"class": None})
+    return storeName
+
+#function to get store addressgetStoreAddress(soup):
+    storeAddress = soup.find_all("div", {"class":re.compile("nfolvl*")})
+    return storeAddress
+
+#Main
+dictionary={}
+browser = webdriver.Firefox()
+region=["auvergne-rhone-alpes",
+        "bourgogne-franche-comte",
+        "bretagne",
+        "centre-val-de-loire",
+        "corse",
+        "grand-est",
+        "hauts-de-france",
+        "ile-de-france",
+        "normandie",
+        "nouvelle-aquitaine",
+        "occitanie",
+        "pays-de-la-loire",
+        "provence-alpes-cote-d-azur"
+]
+
+for x in range(0,len(region)):
+    url="https://boutiquecigarette.fr/"+region[x]+"/"
+    print(url)
+    for i in range(1,100):
+        if i == 1:
+            url="https://boutiquecigarette.fr/"+region[x]+"/"
+        else:
+            url = "https://boutiquecigarette.fr/"+region[x]+"/"+"p"+str(i)
+
+        browser.get(url)
+        soup = BeautifulSoup(browser.page_source,'lxml')
+        if soup.findAll(string="Revenir à l'accueil"):
+            break
+        else:
+            loopNum = len(getStoreName(soup))
+            for j in range(0,loopNum):
+                dictionary[getStoreAddress(soup)[j].find("p").text] = getStoreName(soup)[j].text + " separate " + region[x]
+
+#check if the data is correct by using Pandas
+import pandas as pd
+df = pd.DataFrame.from_dict(dictionary,orient="index")
+df.head()
